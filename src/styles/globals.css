@@ -1,0 +1,42 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-sans:
+    var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+.prose-invert .katex-display {
+  display: block;
+  margin: 1em 0;
+  text-align: center;
+}
+
+.prose-invert .katex-display .katex {
+  font-size: 5em;
+}
+
+.prose-invert .katex {
+  font-size: 1em;
+}
+
+/* width */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: #121a2b;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #e4cafc63;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #bc86f063;
+}
