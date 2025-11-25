@@ -20,6 +20,10 @@ export interface GitTreeFile {
   url: string;
 }
 
+interface GitTreeResponse {
+  tree: GitTreeFile[];
+}
+
 export async function getFileTree(): Promise<GitTreeFile[]> {
   noStore();
 
@@ -30,9 +34,9 @@ export async function getFileTree(): Promise<GitTreeFile[]> {
     if (!response.ok) {
       throw new Error(`Error fetching file tree: ${response.statusText}`);
     }
-    const data = await response.json();
+    const data = (await response.json()) as GitTreeResponse;
     return data.tree.filter(
-      (file: GitTreeFile) => file.type === "blob" && file.path.endsWith(".md"),
+      (file) => file.type === "blob" && file.path.endsWith(".md"),
     );
   } catch (error) {
     console.error(error);
@@ -46,6 +50,20 @@ export interface RepoContentItem {
   type: "file" | "dir";
 }
 
+interface GitHubFileContent {
+  content: string;
+  encoding: string;
+  name: string;
+  path: string;
+  type: string;
+}
+
+interface GitHubDirectoryItem {
+  name: string;
+  path: string;
+  type: string;
+}
+
 export async function getFileContent(filePath: string): Promise<string | null> {
   noStore();
   const url = `${GITHUB_API_URL}/repos/${GITHUB_USERNAME}/${GITHUB_REPO_NAME}/contents/${filePath}`;
@@ -54,7 +72,9 @@ export async function getFileContent(filePath: string): Promise<string | null> {
     const response = await fetch(url, authHeaders);
     if (!response.ok) return null;
 
-    const data = await response.json();
+    const data = (await response.json()) as
+      | GitHubFileContent
+      | GitHubDirectoryItem[];
 
     if (Array.isArray(data)) {
       return null;
@@ -77,9 +97,11 @@ export async function getDirectoryContents(
     const response = await fetch(url, authHeaders);
     if (!response.ok) return null;
 
-    const data = await response.json();
+    const data = (await response.json()) as
+      | GitHubDirectoryItem[]
+      | GitHubFileContent;
     if (!Array.isArray(data)) return null;
-    return data.map((item: any) => ({
+    return data.map((item) => ({
       name: item.name,
       path: item.path,
       type: item.type === "dir" ? "dir" : "file",

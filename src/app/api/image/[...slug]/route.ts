@@ -1,5 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { env } from "@/env";
+
+interface GitHubFileMetadata {
+  download_url?: string;
+}
 
 async function getRawImageFromGithub(
   imagePath: string,
@@ -19,7 +24,7 @@ async function getRawImageFromGithub(
 
     if (!metaResponse.ok) return null;
 
-    const metaData = await metaResponse.json();
+    const metaData = (await metaResponse.json()) as GitHubFileMetadata;
     if (!metaData.download_url) return null;
 
     const imageResponse = await fetch(metaData.download_url, {
@@ -39,9 +44,10 @@ async function getRawImageFromGithub(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string[] } },
+  { params }: { params: Promise<{ slug: string[] }> },
 ) {
-  const imagePath = params.slug.join("/");
+  const { slug } = await params;
+  const imagePath = slug.join("/");
 
   const imageBuffer = await getRawImageFromGithub(imagePath);
 

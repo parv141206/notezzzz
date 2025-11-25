@@ -10,16 +10,15 @@ import rehypeKatex from "rehype-katex";
 import { FaRegFolder, FaRegFileLines } from "react-icons/fa6";
 import remarkGfm from "remark-gfm";
 
-interface NotePageProps {
-  params: {
-    slug?: string[];
-  };
-}
+type NotePageProps = {
+  params: Promise<{ slug?: string[] }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
 function processObsidianImages(content: string): string {
   const obsidianImageRegex = /!\[\[([^|\]]+?)\]\]/g;
 
-  return content.replace(obsidianImageRegex, (match, imageName) => {
+  return content.replace(obsidianImageRegex, (_match, imageName: string) => {
     const trimmedImageName = imageName.trim();
     const encodedImageName = encodeURIComponent(trimmedImageName);
     return `![](/api/image/${encodedImageName})`;
@@ -31,23 +30,28 @@ function ensureDisplayMathNewlines(content: string): string {
   const result: string[] = [];
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]!;
+    const line = lines[i];
+    if (!line) continue;
+
     const trimmed = line.trim();
 
     if (trimmed.startsWith("$$") && !trimmed.startsWith("$$$")) {
-      if (result.length > 0 && result[result.length - 1]!.trim() !== "") {
+      const lastResult = result[result.length - 1];
+      if (result.length > 0 && lastResult && lastResult.trim() !== "") {
         result.push("");
       }
       result.push(line);
 
       if (trimmed.endsWith("$$") && trimmed.length > 4) {
-        if (i + 1 < lines.length && lines[i + 1]!.trim() !== "") {
+        const nextLine = lines[i + 1];
+        if (i + 1 < lines.length && nextLine && nextLine.trim() !== "") {
           result.push("");
         }
       }
     } else if (trimmed.endsWith("$$") && !trimmed.startsWith("$$")) {
       result.push(line);
-      if (i + 1 < lines.length && lines[i + 1]!.trim() !== "") {
+      const nextLine = lines[i + 1];
+      if (i + 1 < lines.length && nextLine && nextLine.trim() !== "") {
         result.push("");
       }
     } else {
@@ -58,13 +62,7 @@ function ensureDisplayMathNewlines(content: string): string {
   return result.join("\n");
 }
 
-function DirectoryView({
-  path,
-  items,
-}: {
-  path: string;
-  items: RepoContentItem[];
-}) {
+function DirectoryView({ items }: { items: RepoContentItem[] }) {
   const sortedItems = [...items].sort((a, b) => {
     if (a.type === "dir" && b.type !== "dir") return -1;
     if (a.type !== "dir" && b.type === "dir") return 1;
@@ -99,7 +97,8 @@ function DirectoryView({
 }
 
 export default async function NotePage({ params }: NotePageProps) {
-  const path = (await params.slug?.join("/")) ?? "";
+  const { slug } = await params;
+  const path = slug?.join("/") ?? "";
   const fileContent = path ? await getFileContent(`${path}.md`) : null;
 
   if (fileContent !== null) {
@@ -121,7 +120,7 @@ export default async function NotePage({ params }: NotePageProps) {
   const dirContents = await getDirectoryContents(path);
 
   if (dirContents) {
-    return <DirectoryView path={path} items={dirContents} />;
+    return <DirectoryView items={dirContents} />;
   }
 
   return (
